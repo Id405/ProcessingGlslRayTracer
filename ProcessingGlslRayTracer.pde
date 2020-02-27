@@ -1,4 +1,8 @@
+import java.awt.AWTException;
+import java.awt.Robot;
+
 PShader TR;
+Robot rb;
 
 float fov = 90;
 
@@ -13,8 +17,14 @@ float rotationX = 0;
 float rotationY = 0;
 float rotationZ = 0;
 
+boolean lock = true;
+
 float moveSpeed = 0.1;
 float rotSpeed = 0.05;
+float sensitivity = 0.001;
+
+int robotMoveAmountX;
+int robotMoveAmountY;
 
 
 void setup() {
@@ -24,6 +34,18 @@ void setup() {
   TR = loadShader("Tracer.glsl");
   TR.set("maxsteps", maxsteps);
   TR.set("margin", margin);
+  
+  try
+  {
+    rb = new Robot();
+  }
+  catch (AWTException e)
+  {
+    println("Robot class not supported by your system!");
+    exit();
+  }
+  
+  noCursor();
 }
 
 void draw() {
@@ -38,11 +60,11 @@ void draw() {
     if(key == 'w') {
       transRotate(new PVector(0, 1, 0));
     } else if (key == 's') {
-      transy -= moveSpeed;
+      transRotate(new PVector(0, -1, 0));
     } else if (key == 'a') {
-      transx -= moveSpeed;
+      transRotate(new PVector(-1, 0, 0));
     } else if (key == 'd') {
-      transx += moveSpeed;
+      transRotate(new PVector(1, 0, 0));
     } else if (key == ' ') {
       transz += moveSpeed;
     } else if (key == 'c') {
@@ -55,7 +77,28 @@ void draw() {
       rotationZ += rotSpeed;
     } else if (keyCode == RIGHT) {
       rotationZ -= rotSpeed;
+    } else if (key == 'g') {
+      noCursor();
+      lock = !lock;
+      if(lock) {
+        noCursor();
+      } else {
+        cursor(HAND);
+      }
     }
+  }
+  
+  if(lock) {
+    int dX = mouseX-pmouseX+robotMoveAmountX;
+    int dY = mouseY-pmouseY+robotMoveAmountY;
+    
+    rb.mouseMove(displayWidth/2, displayHeight/2);
+    
+    robotMoveAmountX = mouseX-width/2;
+    robotMoveAmountY = mouseY-height/2;
+    
+    rotationX -= dY*sensitivity;
+    rotationZ -= dX*sensitivity;
   }
   
   shader(TR);
@@ -67,9 +110,9 @@ void transRotate(PVector vec3) {
   zRot.rotate(rotationZ);
   vec3 = new PVector(zRot.x, zRot.y, vec3.z);
   
-  PVector yRot = new PVector(vec3.x, vec3.z);
+  PVector yRot = new PVector(vec3.y, vec3.z);
   yRot.rotate(rotationX);
-  vec3 = new PVector(yRot.x, vec3.y, yRot.z);
+  vec3 = new PVector(vec3.x, yRot.x, yRot.z);
   
   transy += moveSpeed * vec3.y;
   transx += moveSpeed * vec3.x;

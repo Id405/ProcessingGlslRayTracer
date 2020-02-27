@@ -1,12 +1,18 @@
 uniform vec2 iResolution = vec2(40.0, 40.0);
 uniform float maxsteps = 40.0;
 uniform float margin = 0.01;
+uniform vec3 skycolor = vec3(1.0);
+uniform vec3 materialColor = vec3(0.9);
 
 uniform vec3 transl = vec3(0, -5, 0);
 uniform vec3 rotation = vec3(0, 0, 0);
 
 const float glowScale = 1.0;
 vec4 glowColor = vec4(0.5, 0.8, 1.0, 1.0);
+
+float rand(float x) {
+	return fract(sin(x)*100000.0);
+}
 
 mat4 rotationX( in float angle ) { //https://gist.github.com/onedayitwillmake/3288507
 	return mat4(	1.0,		0,			0,			0,
@@ -49,9 +55,17 @@ float f( in vec3 p) {
     return min(sphereDist(p, vec3(0.0), 1.0), planeDist(p, -2.0));
 }
 
-//float scatter(vec3 p, vec3 vel) {	
-//    
-//}
+vec3 scatter(vec3 p) {	
+	vec3 rayVel = normalize(vec3(rand(p.x+0.98), rand(p.y+0.338),rand(p.z+0.75)));
+	float tries = 0;
+	
+    while(f(p + rayVel) > margin) {
+		tries += 1;
+		rayVel = normalize(vec3(rand(p.x+0.98+tries), rand(p.y+0.338+tries), rand(p.z+0.75+tries)));
+	}
+	
+	return rayVel;
+}
 
 vec3 calcNormal( in vec3 p ) {
     const float h = 0.0001;
@@ -67,27 +81,21 @@ vec4 trace(vec2 p, vec3 transl) {
     vec3 raypos = transl;
     vec3 rayvel = normalize(vec3(s.x, 1000, s.y));
 	rayvel = rotate(rotation, rayvel);
-        
-    vec4 color = vec4(0);
-    
-    float min = 1000.0;
+	
+	float bounces = 0.0;
     
     for(float i=0.0; i<maxsteps; i++) {
         float distance = f(raypos);
         raypos += rayvel * distance;
         
         if(distance < margin) {
-            float gray = i/maxsteps;
-            color = vec4(gray, gray, gray, 1.0);
-            return color;
-        }
-        
-        if(distance < min) {
-            min = distance;
+            bounces += 1.0;
+			rayvel = scatter(raypos);
         }
         
     }
-    return vec4(0.0);
+	
+    return vec4(skycolor*pow(materialColor, vec3(bounces)), 1.0);
 }
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
