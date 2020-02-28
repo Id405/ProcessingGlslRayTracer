@@ -6,8 +6,9 @@ Robot rb;
 
 float fov = 90;
 
-float maxsteps = 250;
-float margin = 0.05;
+float maxsteps = 100;
+float margin = 0.01;
+float samples = 1;
 
 float transx = 0;
 float transy = -5;
@@ -53,6 +54,7 @@ void draw() {
   TR.set("iResolution", float(width), float(height));
   TR.set("transl", transx, transy, transz);
   TR.set("rotation", rotationX, rotationY, rotationZ);
+  TR.set("samples", samples);
   
   println(frameRate);
   
@@ -78,7 +80,6 @@ void draw() {
     } else if (keyCode == RIGHT) {
       rotationZ -= rotSpeed;
     } else if (key == 'g') {
-      noCursor();
       lock = !lock;
       if(lock) {
         noCursor();
