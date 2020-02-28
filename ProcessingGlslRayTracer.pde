@@ -6,9 +6,9 @@ Robot rb;
 
 float fov = 90;
 
-float maxsteps = 100;
-float margin = 0.01;
-float samples = 1;
+float maxsteps = 50;
+float margin = 0.1;
+float samples = 10;
 
 float transx = 0;
 float transy = -5;

@@ -1,11 +1,11 @@
 uniform vec2 iResolution = vec2(40.0, 40.0);
 uniform float maxsteps = 20.0;
 uniform float margin = 0.1;
-uniform vec3 skycolor = vec3(0.9, 0.9, 1.0);
-uniform vec3 suncolor = vec3(1.0, 1.0, 0.5);
+uniform vec3 skycolor = vec3(0.1, 0.1, 0.1);
+uniform vec3 suncolor = vec3(1.0, 1.0, 1.0);
 uniform vec3 materialColor = vec3(0.9);
 uniform float samples = 10;
-uniform float renderDistance = 50;
+uniform float renderDistance = 10;
 uniform vec3 lightdir = vec3(0.5, -1.0, 1.0);
 
 uniform vec3 transl = vec3(0, -5, 0);
@@ -60,8 +60,8 @@ float planeDist(in vec3 p, in float pP) {
 }
 
 float f( in vec3 p) {
-    // return min(sphereDist(p, vec3(0.0), 1.0), planeDist(p, -1.0));
-	return sphereDist(p, vec3(0.0), 1.0);
+    return min(sphereDist(p, vec3(0.0), 1.0), planeDist(p, -1.0));
+	// return sphereDist(p, vec3(0.0), 1.0);
 }
 
 vec3 calcNormal( in vec3 p ) {
@@ -74,8 +74,9 @@ vec3 calcNormal( in vec3 p ) {
 }
 
 vec3 scatter(vec3 p) {
-	// vec3 rayVel = normalize(rotate(calcNormal(p), vec3((rand(p.x + sampleN) * 2 - 1) * PI, (rand(p.y + sampleN) * 2 - 1) * PI, (rand(p.z + sampleN) * 2 - 1) * PI)));
-	return calcNormal(p);
+	vec3 rayVel = normalize(rotate(calcNormal(p), vec3((rand(p.x + sampleN) * 2 - 1) * PI, (rand(p.y + sampleN) * 2 - 1) * PI, (rand(p.z + sampleN) * 2 - 1) * PI)));
+	// return calcNormal(p);
+	return rayVel;
 }
 
 vec4 trace(vec2 p, vec3 transl) {
@@ -100,9 +101,10 @@ vec4 trace(vec2 p, vec3 transl) {
 		}
     }
 	
-	vec3 sunlight = suncolor * pow(dot(normalize(lightdir), rayvel)/2, 1.0) + skycolor;
+	vec3 sunlight = suncolor * pow(max(dot(normalize(lightdir), rayvel), 0.0), 100.0) + skycolor;
 	
-    return vec4(sunlight, 1.0);
+    // return vec4(sunlight * pow(materialColor, vec3(bounces)), 1.0);
+	return vec4(sunlight, 1.0);
 }
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
@@ -115,7 +117,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
 		fragColor.xyz /= samples;
 
-    // fragColor = pow(fragColor, vec4(1.0/2.2));
+    fragColor = pow(fragColor, vec4(1.0/2.2));
 }
 
 void main() {
