@@ -3,13 +3,18 @@ uniform float maxsteps = 20.0;
 uniform float margin = 0.1;
 uniform float samples = 10;
 uniform float renderDistance = 10;
+uniform float fov = 90;
+
+uniform float maxLight = -1;
+uniform float minLight = 0;
+
 // uniform vec3 skycolor = vec3(135.0/255.0, 206.0/255.0, 235.0/255.0); // actual sky color
 uniform vec3 skycolor = vec3(0.5); //gray
 uniform vec3 suncolor = vec3(192.0/255.0, 191.0/255.0, 173.0/255.0);
 uniform vec3 lightcolor = vec3(5, 0, 0);
 uniform vec3 lightdir = vec3(0.5, -1.0, 1.0);
-uniform float sunSharpness = 10.0;
-uniform float sunPower = 2.0;
+uniform float sunSharpness = 20.0;
+uniform float sunPower = 5.0;
 uniform float skyPower = 0.5;
 uniform float frameCount = 0;
 
@@ -42,7 +47,7 @@ float rand (vec2 st) {
 }
 
 float rand(float x) {
-	 return rand(vec2(fract(sin(float(hash(uint((x+frameCount+sampleN)*10000.0)) % 1000000000)))) + gl_FragCoord.xy); // random numbers in glsl suuuuuuuuuuuck
+	 return rand(vec2(x + frameCount) + gl_FragCoord.xy); // random numbers in glsl suuuuuuuuuuuck
 }
 
 mat4 rotationX( in float angle ) { //https://gist.github.com/onedayitwillmake/3288507
@@ -124,7 +129,7 @@ vec3 scatter(vec3 p) {
 vec4 trace(vec2 p, vec3 transl) {
 	vec2 s = vec2(p.x - iResolution.x/2.0f, p.y - iResolution.y/2.0f);
 	vec3 raypos = transl;
-	vec3 rayvel = normalize(vec3(s.x, 1000, s.y));
+	vec3 rayvel = normalize(vec3(s.x/iResolution.x, fov, s.y/iResolution.x));
 	rayvel = rotate(rotation, rayvel);
 
 	float bounces = 0.0;
@@ -166,13 +171,44 @@ vec4 trace(vec2 p, vec3 transl) {
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
+	float samplesCount = samples;
 
 	for(int i=0; i < samples; i++) {
 		sampleN = i;
+		vec4 col = trace(fragCoord+(vec2(rand(i), rand(i+25.6))), transl);
+
+		if(col.x < minLight) {
+			samplesCount -= 1;
+			col = vec4(0);
+		}
+		if(col.y < minLight) {
+			samplesCount -= 1;
+			col = vec4(0);
+		}
+		if(col.z < minLight) {
+			samplesCount -= 1;
+			col = vec4(0);
+		}
+
+		if(maxLight > 0.0) {
+			if(col.x > maxLight) {
+				samplesCount -= 1;
+				col = vec4(0);
+			}
+			if(col.y > maxLight) {
+				samplesCount -= 1;
+				col = vec4(0);
+			}
+			if(col.z > maxLight) {
+				samplesCount -= 1;
+				col = vec4(0);
+			}
+		}
+
 		fragColor += trace(fragCoord+(vec2(rand(i), rand(i+25.6))*2-1.0), transl);
 	}
 
-	fragColor.xyz /= samples;
+	fragColor.xyz /= samplesCount;
 
 	fragColor = pow(fragColor, vec4(1.0/2.2));
 }

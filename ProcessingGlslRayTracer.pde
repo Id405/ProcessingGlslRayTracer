@@ -4,11 +4,12 @@ import java.awt.Robot;
 PShader TR;
 Robot rb;
 
-float fov = 90;
+float fov = 70;
 
-float maxsteps = 500;
+float maxsteps = 250;
 float margin = 0.01;
-float samples = 10;
+float samples = 5;
+float progressiveSamples = 25; //Run more shader samples when progressively rendering because averaging in the shader is much more perfomant than averaging in using floatImage
 
 float transx = 0;
 float transy = -5;
@@ -22,7 +23,6 @@ boolean lock = false;
 boolean progressiveSampling = true;
 
 PGraphics graphics;
-PGraphics avggraphics;
 FloatImage sampledImage;
 int sampleCount = 0;
 
@@ -46,12 +46,11 @@ void setup() {
   TR.set("transl", transx, transy, transz);
   TR.set("rotation", rotationX, rotationY, rotationZ);
   TR.set("samples", samples);
-
+  TR.set("fov", 0.5 * tan(radians(90 - fov/2)));
 
   if (progressiveSampling) {
     graphics = createGraphics(width, height, P2D);
     graphics.shader(TR);
-    avggraphics = createGraphics(width, height, P2D);
     resetSampling();
   }
   
@@ -75,7 +74,9 @@ void draw() {
   TR.set("iResolution", float(width), float(height));
   TR.set("transl", transx, transy, transz);
   TR.set("rotation", rotationX, rotationY, rotationZ);
+  TR.set("fov", 0.5 * tan(radians(90f - fov/2f)));
   TR.set("frameCount", float(frameCount));
+  TR.set("samples", samples);
   println("FPS: " + frameRate + " Samples: " + (sampleCount * samples));
 
   if (keyPressed && lock) {
@@ -124,6 +125,7 @@ void draw() {
 
   if (progressiveSampling && !lock) {
     resetShader();
+    TR.set("samples", progressiveSamples);
     graphics.beginDraw();
     graphics.rect(0, 0, width, height);
     graphics.endDraw();
@@ -175,6 +177,7 @@ void resetSampling() {
   if (progressiveSampling) {
     graphics.beginDraw();
     graphics.shader(TR);
+    TR.set("samples", progressiveSamples);
     graphics.rect(0, 0, width, height);
     graphics.endDraw();
     sampledImage = new FloatImage(graphics.get());
