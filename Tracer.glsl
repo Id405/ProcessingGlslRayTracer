@@ -1,18 +1,20 @@
 uniform vec2 iResolution = vec2(40.0, 40.0);
 uniform float maxsteps = 20.0;
 uniform float margin = 0.1;
+uniform float samples = 10;
+uniform float renderDistance = 10;
 // uniform vec3 skycolor = vec3(135.0/255.0, 206.0/255.0, 235.0/255.0); // actual sky color
 uniform vec3 skycolor = vec3(0.5); //gray
 uniform vec3 suncolor = vec3(192.0/255.0, 191.0/255.0, 173.0/255.0);
 uniform vec3 lightcolor = vec3(5, 0, 0);
-uniform vec3 materialColor = vec3(0.9);
-uniform float samples = 10;
-uniform float renderDistance = 10;
 uniform vec3 lightdir = vec3(0.5, -1.0, 1.0);
 uniform float sunSharpness = 10.0;
 uniform float sunPower = 2.0;
 uniform float skyPower = 0.5;
 uniform float frameCount = 0;
+
+uniform vec3 materialColor = vec3(0.9);
+uniform float metalRoughness = 0.9;
 
 uniform vec3 transl = vec3(0, -5, 0);
 uniform vec3 rotation = vec3(0, 0, 0);
@@ -88,8 +90,12 @@ float emissiveF(in vec3 p) {
 	return sphereDist(p, vec3(1.0, 0.5, 1.0), 0.5);
 }
 
+float metallicF(in vec3 p) {
+	return sphereDist(p, vec3(2.5, -0.4, 0.0), 1.0);
+}
+
 float f( in vec3 p) {
-	return min(emissiveF(p), diffuseF(p));
+	return min(min(emissiveF(p), diffuseF(p)), metallicF(p));
 	// return sphereDist(p, vec3(0.0), 1.0);
 }
 
@@ -100,6 +106,12 @@ return normalize(vec3(
 	f(vec3(p.x, p.y + h, p.z)) - f(vec3(p.x, p.y - h, p.z)),
 	f(vec3(p.x, p.y, p.z  + h)) - f(vec3(p.x, p.y, p.z - h))
 	));
+}
+
+vec3 metalScatter(vec3 p, vec3 v) {
+	vec3 n = calcNormal(p);
+	vec3 rayVel = v - 2*dot(v, n) * n;
+	return rayVel;
 }
 
 vec3 scatter(vec3 p) {
@@ -126,6 +138,12 @@ vec4 trace(vec2 p, vec3 transl) {
 		if(emissiveF(raypos) < margin) {
 			light = lightcolor;
 			break;
+		}
+
+		if(metallicF(raypos) < margin) {
+			bounces += 1.0;
+			rayvel = normalize(metalScatter(raypos, rayvel) * metalRoughness + scatter(raypos) * (1 - metalRoughness));
+			raypos += calcNormal(raypos)*margin;
 		}
 
 		if(distance < margin) {
