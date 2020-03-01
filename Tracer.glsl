@@ -4,6 +4,7 @@ uniform float margin = 0.1;
 // uniform vec3 skycolor = vec3(135.0/255.0, 206.0/255.0, 235.0/255.0); // actual sky color
 uniform vec3 skycolor = vec3(0.5); //gray
 uniform vec3 suncolor = vec3(192.0/255.0, 191.0/255.0, 173.0/255.0);
+uniform vec3 lightcolor = vec3(5, 0, 0);
 uniform vec3 materialColor = vec3(0.9);
 uniform float samples = 10;
 uniform float renderDistance = 10;
@@ -43,45 +44,53 @@ float rand(float x) {
 }
 
 mat4 rotationX( in float angle ) { //https://gist.github.com/onedayitwillmake/3288507
-return mat4(	1.0,		0,			0,			0,
-0, 	cos(angle),	-sin(angle),		0,
-0, 	sin(angle),	 cos(angle),		0,
-0, 			0,			  0, 		1);
+	return mat4(	1.0,		0,			0,			0,
+									0, 	cos(angle),	-sin(angle),		0,
+									0, 	sin(angle),	 cos(angle),		0,
+									0, 			0,			  0, 		1);
 }
 
 mat4 rotationY( in float angle ) {
-return mat4(	cos(angle),		0,		sin(angle),	0,
-0,		1.0,			 0,	0,
--sin(angle),	0,		cos(angle),	0,
-0, 		0,				0,	1);
+	return mat4(	cos(angle),		0,		sin(angle),	0,
+								0,		1.0,			 0,	0,
+								-sin(angle),	0,		cos(angle),	0,
+								0, 		0,				0,	1);
 }
 
 mat4 rotationZ( in float angle ) {
-return mat4(	cos(angle),		-sin(angle),	0,	0,
-sin(angle),		cos(angle),		0,	0,
-0,				0,		1,	0,
-0,				0,		0,	1);
+	return mat4(	cos(angle),		-sin(angle),	0,	0,
+								sin(angle),		cos(angle),		0,	0,
+								0,				0,		1,	0,
+								0,				0,		0,	1);
 }
 
 vec3 rotate(vec3 r, vec3 p) {
-vec4 vertex = vec4(p.xyz, 1.0);
+	vec4 vertex = vec4(p.xyz, 1.0);
 
-vertex = vertex * rotationX(r.x) * rotationY(r.y) * rotationZ(r.z);
+	vertex = vertex * rotationX(r.x) * rotationY(r.y) * rotationZ(r.z);
 
-return vertex.xyz;
+	return vertex.xyz;
 }
 
 float sphereDist(in vec3 p, in vec3 sP, in float sS) {
-return distance(p, vec3(sP)) - sS;
+	return distance(p, vec3(sP)) - sS;
 }
 
 float planeDist(in vec3 p, in float pP) {
-return p.z-pP;
+	return p.z-pP;
+}
+
+float diffuseF(in vec3 p) {
+	return min(sphereDist(p, vec3(0.0), 1.0), planeDist(p, -1.0));
+}
+
+float emissiveF(in vec3 p) {
+	return sphereDist(p, vec3(1.0, 0.5, 1.0), 0.5);
 }
 
 float f( in vec3 p) {
-return min(min(sphereDist(p, vec3(0.0), 1.0), planeDist(p, -1.0)), sphereDist(p, vec3(1.0, 0.5, 1.0), 0.5));
-// return sphereDist(p, vec3(0.0), 1.0);
+	return min(emissiveF(p), diffuseF(p));
+	// return sphereDist(p, vec3(0.0), 1.0);
 }
 
 vec3 calcNormal( in vec3 p ) {
@@ -94,7 +103,8 @@ return normalize(vec3(
 }
 
 vec3 scatter(vec3 p) {
-	vec3 rayVel = normalize(vec3(rand(p.x+sampleN) * 2 - 1, rand(p.y+sampleN) * 2 - 1, rand(p.z+sampleN) * 2 - 1));
+	// vec3 rayVel = normalize(vec3(rand(p.x+sampleN) * 2 - 1, rand(p.y+sampleN) * 2 - 1, rand(p.z+sampleN) * 2 - 1));
+	vec3 rayVel = normalize(rotate(calcNormal(p), normalize(vec3((rand(p.x) * 2 - 1) * PI, (rand(p.y) * 2 - 1) * PI, (rand(p.z) * 2 - 1) * PI))));
 	// return calcNormal(p);
 	return rayVel;
 }
@@ -113,8 +123,8 @@ vec4 trace(vec2 p, vec3 transl) {
 		float distance = f(raypos);
 		raypos += rayvel * distance;
 
-		if(sphereDist(raypos, vec3(1.0, 0.5, 1.0), 0.5) < margin) {
-			light = vec3(5, 0, 0);
+		if(emissiveF(raypos) < margin) {
+			light = lightcolor;
 			break;
 		}
 

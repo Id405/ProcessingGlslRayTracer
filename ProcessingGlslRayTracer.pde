@@ -23,7 +23,7 @@ boolean progressiveSampling = true;
 
 PGraphics graphics;
 PGraphics avggraphics;
-PImage sampledImage;
+FloatImage sampledImage;
 int sampleCount = 0;
 
 float moveSpeed = 0.1;
@@ -128,7 +128,7 @@ void draw() {
     graphics.rect(0, 0, width, height);
     graphics.endDraw();
     addSample(graphics.get()); //Must use .get() to prevent a reference being made
-    image(sampledImage.get(), 0, 0);
+    image(sampledImage.getImage(), 0, 0);
   } else {
     shader(TR);
     rect(0, 0, width, height);
@@ -165,16 +165,9 @@ void transRotate(PVector vec3) {
 }
 
 void addSample(PImage img) { //TODO make averaging of image run in the background while sampling happens continously
-  avggraphics.beginDraw();
-  avggraphics.background(0, 0, 0, 0);
-  avggraphics.blendMode(ADD);
-  avggraphics.tint(255, 255, 255, round((float(sampleCount)/ float(sampleCount+1)) * 255f));
-  avggraphics.image(sampledImage, 0, 0);
-  avggraphics.noTint();
-  avggraphics.tint(255, 255, 255, round(((1f/float(sampleCount+1))) * 255f));
-  avggraphics.image(img, 0, 0);
-  avggraphics.endDraw();
-  sampledImage = avggraphics.get();
+  FloatImage fImg = new FloatImage(img);
+  
+  sampledImage.average((float) sampleCount / (float) (sampleCount+1), fImg);
   sampleCount++;
 }
 
@@ -184,7 +177,7 @@ void resetSampling() {
     graphics.shader(TR);
     graphics.rect(0, 0, width, height);
     graphics.endDraw();
-    sampledImage = graphics.get();
-    samples = 1;
+    sampledImage = new FloatImage(graphics.get());
+    sampleCount = 0;
   }
 }
