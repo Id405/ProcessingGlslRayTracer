@@ -7,9 +7,9 @@ Robot rb;
 float fov = 70;
 float gamma = 1.5;
 
-float maxsteps = 250;
+float maxsteps = 50;
 float margin = 0.01;
-float samples = 5;
+float samples = 1;
 float progressiveSamples = 25; //Run more shader samples when progressively rendering because averaging in the shader is much more perfomant than averaging in using floatImage
 
 float transx = 0;
@@ -20,7 +20,7 @@ float rotationX = 0;
 float rotationY = 0;
 float rotationZ = 0;
 
-boolean lock = false;
+boolean lock = true;
 boolean fullscreen = false;
 boolean progressiveSampling = true;
 
@@ -28,7 +28,7 @@ PGraphics graphics;
 FloatImage sampledImage;
 int sampleCount = 0;
 
-float moveSpeed = 0.1;
+float moveSpeed = 0.5;
 float rotSpeed = 0.05;
 float sensitivity = 0.001;
 

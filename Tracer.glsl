@@ -2,7 +2,7 @@ uniform vec2 iResolution = vec2(40.0, 40.0); //TODO import models as spherical v
 uniform float maxsteps = 20.0;
 uniform float margin = 0.1;
 uniform float samples = 10;
-uniform float renderDistance = 10;
+uniform float renderDistance = 1000000;
 uniform float fov = 90;
 
 uniform float maxLight = -1;
@@ -47,9 +47,7 @@ uint hash( uint x ) {
 }
 
 float rand (vec2 st) {
-    return fract(sin(dot(st.xy,
-                         vec2(12.9898,78.233)))*
-        43758.5453123);
+    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
 }
 
 float rand(float x) {
@@ -85,6 +83,11 @@ vec3 rotate(vec3 r, vec3 p) {
 	return vertex.xyz;
 }
 
+float boxDist(vec3 p, vec3 b) {
+  vec3 q = abs(p) - b;
+  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)), 0.0);
+}
+
 float sphereDist(in vec3 p, in vec3 sP, in float sS) {
 	return distance(p, vec3(sP)) - sS;
 }
@@ -94,36 +97,8 @@ float planeDist(in vec3 p, in float pP) {
 }
 
 float diffuseF(in vec3 p) {
-	return min(sphereDist(p, vec3(0.0), 1.0), planeDist(p, -1.0));
+	return min(sphereDist(p, vec3(0.0), 1.0), boxDist(p + vec3(0.0, 0.0, 1.0), vec3(5.0, 5.0, 0.1)));
 }
-
-// float diffuseF( in vec3 p) mandelbulb //https://www.shadertoy.com/view/ltfSWn
-// {
-//     vec3 w = p;
-//     float m = dot(w,w);
-//
-//     vec4 trap = vec4(abs(w),m);
-// 	float dz = 1.0;
-//
-//
-// 	for( int i=0; i<7; i++ )
-//     {
-//         dz = 8.0*pow(sqrt(m),7.0)*dz + 1.0;
-//
-//         float r = length(w);
-//         float b = 8.0*acos( w.y/r);
-//         float a = 8.0*atan( w.x, w.z );
-//         w = p + pow(r,8.0) * vec3( sin(b)*sin(a), cos(b), sin(b)*cos(a) );
-//
-//         trap = min( trap, vec4(abs(w),m) );
-//
-//         m = dot(w,w);
-// 		if( m > 256.0 )
-//             break;
-//     }
-//
-//     return 0.25*log(m)*sqrt(m)/dz;
-// }
 
 float emissiveF(in vec3 p) {
 	return sphereDist(p, vec3(1.0, 0.5, 1.0), 0.5);
