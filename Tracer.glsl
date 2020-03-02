@@ -1,4 +1,4 @@
-uniform vec2 iResolution = vec2(40.0, 40.0);
+uniform vec2 iResolution = vec2(40.0, 40.0); //TODO import models as spherical volumes of distance, outside of distance volume the mdoel is just distance to the center of the distance volume, also try importing models as polys
 uniform float maxsteps = 20.0;
 uniform float margin = 0.1;
 uniform float samples = 10;
@@ -7,6 +7,8 @@ uniform float fov = 90;
 
 uniform float maxLight = -1;
 uniform float minLight = 0;
+
+uniform float transform = 2.2;
 
 // uniform vec3 skycolor = vec3(135.0/255.0, 206.0/255.0, 235.0/255.0); // actual sky color
 uniform vec3 skycolor = vec3(0.5); //gray
@@ -20,6 +22,10 @@ uniform float frameCount = 0;
 
 uniform vec3 materialColor = vec3(0.9);
 uniform float metalRoughness = 0.9;
+
+uniform float specular = 0.1;
+uniform float phongRoughness = 0.0;
+uniform float specularRoughness = 0.98;
 
 uniform vec3 transl = vec3(0, -5, 0);
 uniform vec3 rotation = vec3(0, 0, 0);
@@ -91,6 +97,34 @@ float diffuseF(in vec3 p) {
 	return min(sphereDist(p, vec3(0.0), 1.0), planeDist(p, -1.0));
 }
 
+// float diffuseF( in vec3 p) mandelbulb //https://www.shadertoy.com/view/ltfSWn
+// {
+//     vec3 w = p;
+//     float m = dot(w,w);
+//
+//     vec4 trap = vec4(abs(w),m);
+// 	float dz = 1.0;
+//
+//
+// 	for( int i=0; i<7; i++ )
+//     {
+//         dz = 8.0*pow(sqrt(m),7.0)*dz + 1.0;
+//
+//         float r = length(w);
+//         float b = 8.0*acos( w.y/r);
+//         float a = 8.0*atan( w.x, w.z );
+//         w = p + pow(r,8.0) * vec3( sin(b)*sin(a), cos(b), sin(b)*cos(a) );
+//
+//         trap = min( trap, vec4(abs(w),m) );
+//
+//         m = dot(w,w);
+// 		if( m > 256.0 )
+//             break;
+//     }
+//
+//     return 0.25*log(m)*sqrt(m)/dz;
+// }
+
 float emissiveF(in vec3 p) {
 	return sphereDist(p, vec3(1.0, 0.5, 1.0), 0.5);
 }
@@ -113,17 +147,24 @@ return normalize(vec3(
 	));
 }
 
-vec3 metalScatter(vec3 p, vec3 v) {
-	vec3 n = calcNormal(p);
+vec3 metalScatter(vec3 p, vec3 v, vec3 n) {
 	vec3 rayVel = v - 2*dot(v, n) * n;
 	return rayVel;
 }
 
-vec3 scatter(vec3 p) {
+vec3 scatter(vec3 p, vec3 v, vec3 n) {
 	// vec3 rayVel = normalize(vec3(rand(p.x+sampleN) * 2 - 1, rand(p.y+sampleN) * 2 - 1, rand(p.z+sampleN) * 2 - 1));
 	vec3 rayVel = normalize(rotate(calcNormal(p), normalize(vec3((rand(p.x) * 2 - 1) * PI, (rand(p.y) * 2 - 1) * PI, (rand(p.z) * 2 - 1) * PI))));
 	// return calcNormal(p);
 	return rayVel;
+}
+
+vec3 phong(vec3 p, vec3 v, vec3 n, float spec) {
+	if(rand(length(v + n)) > spec) {
+		return metalScatter(p, v, n) * phongRoughness + scatter(p, v, n) * (1 - metalRoughness);
+	} else {
+		return metalScatter(p, v, n) * specularRoughness + scatter(p, v, n) * (1 - metalRoughness);
+	}
 }
 
 vec4 trace(vec2 p, vec3 transl) {
@@ -147,14 +188,16 @@ vec4 trace(vec2 p, vec3 transl) {
 
 		if(metallicF(raypos) < margin) {
 			bounces += 1.0;
-			rayvel = normalize(metalScatter(raypos, rayvel) * metalRoughness + scatter(raypos) * (1 - metalRoughness));
+			vec3 n = calcNormal(raypos);
+			rayvel = normalize(metalScatter(raypos, rayvel, n) * metalRoughness + scatter(raypos, rayvel, n) * (1 - metalRoughness));
 			raypos += calcNormal(raypos)*margin;
 		}
 
 		if(distance < margin) {
 			bounces += 1.0;
-			rayvel = scatter(raypos);
-			raypos += calcNormal(raypos)*margin;
+			vec3 n = calcNormal(raypos);
+			rayvel = scatter(raypos, rayvel, n);
+			raypos += n*margin;
 		}
 
 		if(distance > renderDistance) {
@@ -208,9 +251,9 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 		fragColor += trace(fragCoord+(vec2(rand(i), rand(i+25.6))*2-1.0), transl);
 	}
 
-	fragColor.xyz /= samplesCount;
+	fragColor /= samplesCount;
 
-	fragColor = pow(fragColor, vec4(1.0/2.2));
+	// fragColor = pow(fragColor, vec4(vec3(1.0/2.2), 1.0));
 }
 
 void main() {

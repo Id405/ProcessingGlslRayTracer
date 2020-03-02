@@ -53,7 +53,12 @@ class FloatColor {
   }
 
   color getColor() {
-    return color(r * 255, g * 255, b * 255);
+    return color(transform(r) * 255, transform(g) * 255, transform(b) * 255);
+  }
+  
+  float transform(float g) {
+    return pow(g, 1.0/gamma);
+    //return g;
   }
 
   void average(float weight, FloatColor col) {

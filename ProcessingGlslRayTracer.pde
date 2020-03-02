@@ -5,6 +5,7 @@ PShader TR;
 Robot rb;
 
 float fov = 70;
+float gamma = 1.5;
 
 float maxsteps = 250;
 float margin = 0.01;
@@ -20,6 +21,7 @@ float rotationY = 0;
 float rotationZ = 0;
 
 boolean lock = false;
+boolean fullscreen = false;
 boolean progressiveSampling = true;
 
 PGraphics graphics;
@@ -37,6 +39,7 @@ int robotMoveAmountY;
 void setup() {
   size(800, 800, P2D);
   //fullScreen(P2D);
+  //fullscreen = true;
 
   TR = loadShader("Tracer.glsl");
   TR.set("maxsteps", maxsteps);
@@ -53,7 +56,7 @@ void setup() {
     graphics.shader(TR);
     resetSampling();
   }
-  
+
   try
   {
     rb = new Robot();
@@ -77,6 +80,7 @@ void draw() {
   TR.set("fov", 0.5 * tan(radians(90f - fov/2f)));
   TR.set("frameCount", float(frameCount));
   TR.set("samples", samples);
+  TR.set("transform", 2.2);
   println("FPS: " + frameRate + " Samples: " + (sampleCount * samples));
 
   if (keyPressed && lock) {
@@ -109,8 +113,13 @@ void draw() {
     int dX = mouseX-pmouseX+robotMoveAmountX;
     int dY = mouseY-pmouseY+robotMoveAmountY;
 
-    robotMoveAmountX = mouseX-width/2;
-    robotMoveAmountY = mouseY-height/2;
+    if (fullscreen) {
+      robotMoveAmountX = mouseX-displayWidth/2;
+      robotMoveAmountY = mouseY-displayHeight/2;
+    } else {
+      robotMoveAmountX = mouseX-width/2;
+      robotMoveAmountY = mouseY-height/2;
+    }
 
     rb.mouseMove(displayWidth/2, displayHeight/2);
 
@@ -126,6 +135,7 @@ void draw() {
   if (progressiveSampling && !lock) {
     resetShader();
     TR.set("samples", progressiveSamples);
+    TR.set("transform", 2.2);
     graphics.beginDraw();
     graphics.rect(0, 0, width, height);
     graphics.endDraw();
@@ -168,18 +178,19 @@ void transRotate(PVector vec3) {
 
 void addSample(PImage img) { //TODO make averaging of image run in the background while sampling happens continously
   FloatImage fImg = new FloatImage(img);
-  
+
   sampledImage.average((float) sampleCount / (float) (sampleCount+1), fImg);
   sampleCount++;
 }
 
 void resetSampling() {
   if (progressiveSampling) {
-    graphics.beginDraw();
-    graphics.shader(TR);
-    TR.set("samples", progressiveSamples);
-    graphics.rect(0, 0, width, height);
-    graphics.endDraw();
+    //graphics.beginDraw();
+    //graphics.shader(TR);
+    //TR.set("samples", progressiveSamples);
+    //TR.set("transform", 0);
+    //graphics.rect(0, 0, width, height);
+    //graphics.endDraw();
     sampledImage = new FloatImage(graphics.get());
     sampleCount = 0;
   }
