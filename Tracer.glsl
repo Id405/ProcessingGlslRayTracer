@@ -11,7 +11,7 @@ uniform float minLight = 0;
 uniform float transform = 2.2;
 
 // uniform vec3 skycolor = vec3(135.0/255.0, 206.0/255.0, 235.0/255.0); // actual sky color
-uniform vec3 skycolor = vec3(0.5); //gray
+uniform vec3 skycolor = vec3(0.9); //gray
 uniform vec3 suncolor = vec3(192.0/255.0, 191.0/255.0, 173.0/255.0);
 uniform vec3 lightcolor = vec3(5, 0, 0);
 uniform vec3 lightdir = vec3(0.5, -1.0, 1.0);

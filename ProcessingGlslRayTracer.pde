@@ -7,7 +7,7 @@ Robot rb;
 float fov = 70;
 float gamma = 1.5;
 
-float maxsteps = 50;
+float maxsteps = 100;
 float margin = 0.01;
 float samples = 1;
 float progressiveSamples = 25; //Run more shader samples when progressively rendering because averaging in the shader is much more perfomant than averaging in using floatImage
